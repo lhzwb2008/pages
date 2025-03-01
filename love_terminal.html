@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Coze工作流对话界面</title>
+    <style>
+        body { max-width: 800px; margin: 20px auto; padding: 20px; font-family: Arial; }
+        .param-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #666; font-size: 0.9em; }
+        input, textarea { 
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        #chatHistory {
+            height: 400px;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 20px;
+            overflow-y: auto;
+            background: #f9f9f9;
+        }
+        .message { 
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 80%;
+        }
+        .user-message {
+            background: #e3f2fd;
+            margin-left: auto;
+        }
+        .bot-message {
+            background: #fff;
+            border: 1px solid #eee;
+        }
+        #loading {
+            display: none;
+            color: #666;
+            font-style: italic;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .error {
+            color: #dc3545;
+            margin-top: 5px;
+            font-size: 0.9em;
+        }
+        /* 新增响应展示区域样式 */
+        #apiResponse {
+            margin-top: 30px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            background: #f9f9f9;
+        }
+        #apiResponse h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #666;
+        }
+        #rawResponse {
+            white-space: pre-wrap;
+            word-break: break-all;
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="chatHistory">
+        <div class="message bot-message">bot: 你好，有什么需要帮忙的吗？</div>
+    </div>
+
+    <div class="param-group">
+        <label for="input">用户输入 (input):</label>
+        <input type="text" id="input" required>
+    </div>
+
+    <div class="param-group">
+        <label for="property">物品属性 (property JSON):</label>
+        <textarea id="property">{"wheat":3, "corn":2}</textarea>
+        <div class="error" id="propertyError"></div>
+    </div>
+
+    <div class="param-group">
+        <label for="language">语言 (language):</label>
+        <input type="text" id="language" value="chinese" required>
+    </div>
+
+    <div class="param-group">
+        <label for="role">角色 (role):</label>
+        <input type="text" id="role" value="robin" required>
+    </div>
+
+    <div id="loading">请求处理中...</div>
+    <div class="error" id="apiError"></div>
+    <button onclick="sendMessage()">发送消息</button>
+
+    <!-- 新增响应展示区域 -->
+    <div id="apiResponse">
+        <h3>接口完整响应：</h3>
+        <pre id="rawResponse"></pre>
+    </div>
+
+    <script>
+        const CONFIG = {
+            apiUrl: 'https://api.coze.com/v1/workflow/run',
+            token: 'pat_GpNNqh74FYPugc8sudjJpvP90xErx77HYirhP664n7IYp5kooHbk4okwYJheRZkf',
+            workflowId: '7474864491370741815',
+            appId: '7474045882397622278',
+            initialHistory: 'bot:你好，有什么需要帮忙的吗？'
+        };
+
+        let currentHistory = CONFIG.initialHistory;
+
+        function showError(elementId, message) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            setTimeout(() => element.textContent = '', 3000);
+        }
+
+        function addMessageToUI(role, content) {
+            const historyDiv = document.getElementById('chatHistory');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}-message`;
+            messageDiv.innerHTML = `<strong>${role}:</strong> ${content}`;
+            historyDiv.appendChild(messageDiv);
+            historyDiv.scrollTop = historyDiv.scrollHeight;
+        }
+
+        function validateJSON(input) {
+            try {
+                JSON.parse(input);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function showRawResponse(data) {
+            const pre = document.getElementById('rawResponse');
+            pre.textContent = JSON.stringify(data, null, 2);
+            // 自动滚动到响应区域
+            document.getElementById('apiResponse').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function sendMessage() {
+            const button = document.querySelector('button');
+            const loadingDiv = document.getElementById('loading');
+            const apiErrorDiv = document.getElementById('apiError');
+            const propertyInput = document.getElementById('property');
+            
+            try {
+                apiErrorDiv.textContent = '';
+                button.disabled = true;
+                loadingDiv.style.display = 'block';
+
+                if (!validateJSON(propertyInput.value)) {
+                    showError('propertyError', 'JSON格式错误');
+                    return;
+                }
+
+                const userInput = document.getElementById('input').value;
+                if (!userInput.trim()) {
+                    showError('apiError', '输入内容不能为空');
+                    return;
+                }
+
+                currentHistory += `|user:${userInput}`;
+                addMessageToUI('user', userInput);
+
+                const requestBody = {
+                    parameters: {
+                        history: currentHistory,
+                        input: userInput,
+                        language: document.getElementById('language').value,
+                        property: document.getElementById('property').value,
+                        role: document.getElementById('role').value
+                    },
+                    workflow_id: CONFIG.workflowId,
+                    app_id: CONFIG.appId
+                };
+
+                const response = await fetch(CONFIG.apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${CONFIG.token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP错误 ${response.status}`);
+                }
+
+                const responseData = await response.json();
+                showRawResponse(responseData);
+
+                if (responseData.code !== 0) {
+                    throw new Error(`API错误: ${responseData.msg}`);
+                }
+
+                const innerData = JSON.parse(responseData.data);
+                if (!innerData.output) {
+                    throw new Error('响应缺少output字段');
+                }
+
+                currentHistory += `|bot:${innerData.output}`;
+                addMessageToUI('bot', innerData.output);
+
+            } catch (error) {
+                console.error('请求失败:', error);
+                apiErrorDiv.textContent = `错误: ${error.message}`;
+            } finally {
+                button.disabled = false;
+                loadingDiv.style.display = 'none';
+                document.getElementById('input').value = '';
+            }
+        }
+    </script>
+</body>
+</html>
