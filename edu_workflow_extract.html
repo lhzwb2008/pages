@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>教研文档AI</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+        }
+
+        .input-container {
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.25);
+            transform: translateY(-1px);
+        }
+
+        .input-group input:hover {
+            border-color: #adb5bd;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+
+        button:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        #status {
+            min-height: 2rem;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-processing {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .download-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .download-btn:hover {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+
+        .download-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            border: 1px solid #dee2e6;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f8f9fa;
+        }
+
+        .file-item {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>教研工作流-文件解析及整理</h1>
+        <div class="input-container">
+            <div class="input-group">
+                <label for="fileUrl">文档链接：</label>
+                <input 
+                    type="text" 
+                    id="fileUrl" 
+                    placeholder="请输入文件链接 (支持http/https)"
+                    autocomplete="off"
+                    spellcheck="false"
+                    value="https://p3-bot-sign.byteimg.com/tos-cn-i-v4nquku3lp/2d734ef471c2498397e9895f6ee206ea.doc~tplv-v4nquku3lp-image.image?rk3s=68e6b6b5&x-expires=1745029930&x-signature=3VO0aPtGTG15As1qPdMClFOireA%3D"
+                >
+            </div>
+            <div class="input-group">
+                <label for="extractRequest">文档处理要求：</label>
+                <input
+                    type="text"
+                    id="extractRequest"
+                    placeholder="请输入提取要求"
+                    autocomplete="off"
+                    spellcheck="false"
+                    value="识别出 单词（如“apple”）、词性（n.）、汉语意思（“苹果”）"
+                >
+            </div>
+            <button onclick="startProcessing()" id="processBtn">开始处理</button>
+        </div>
+        <div id="status"></div>
+        <div id="result-container" style="margin-top: 2rem; display: none;">
+            <h3>解析结果：</h3>
+            <div id="file-list"></div>
+        </div>
+    </div>
+
+<script>
+function renderResults(outputList) {
+    const container = document.getElementById('file-list');
+    container.innerHTML = '';
+
+    outputList.forEach((item, index) => {
+        if (!item?.output) return;
+
+        const fileContainer = document.createElement('div');
+        fileContainer.className = 'file-item';
+
+        const header = document.createElement('div');
+        header.style.display = 'flex';
+        header.style.justifyContent = 'space-between';
+        header.style.alignItems = 'center';
+        header.style.marginBottom = '1rem';
+
+        const title = document.createElement('h4');
+        title.textContent = `文件 ${index + 1}`;
+        title.style.margin = '0';
+
+        const downloadBtn = document.createElement('button');
+        downloadBtn.textContent = '下载';
+        downloadBtn.className = 'download-btn';
+        downloadBtn.onclick = () => downloadCSV([item], `processed_data_${index + 1}.csv`);
+
+        header.appendChild(title);
+        header.appendChild(downloadBtn);
+
+        // 只显示前5行
+        const maxLines = 5;
+        const allLines = item.output.split('\n').filter(line => line.trim() !== '');
+        const showLines = allLines.slice(0, maxLines);
+        
+        const table = document.createElement('table');
+        showLines.forEach((line, i) => {
+            const row = document.createElement('tr');
+            line.split(',').forEach(cell => {
+                const td = document.createElement(i === 0 ? 'th' : 'td');
+                td.textContent = cell;
+                row.appendChild(td);
+            });
+            table.appendChild(row);
+        });
+
+        // 如果有更多内容，添加"查看更多"按钮
+        if (allLines.length > maxLines) {
+            const moreBtn = document.createElement('button');
+            moreBtn.textContent = '查看更多';
+            moreBtn.className = 'download-btn';
+            moreBtn.style.marginTop = '1rem';
+            moreBtn.onclick = () => {
+                // 展开全部内容
+                table.innerHTML = '';
+                allLines.forEach((line, i) => {
+                    const row = document.createElement('tr');
+                    line.split(',').forEach(cell => {
+                        const td = document.createElement(i === 0 ? 'th' : 'td');
+                        td.textContent = cell;
+                        row.appendChild(td);
+                    });
+                    table.appendChild(row);
+                });
+                moreBtn.style.display = 'none';
+            };
+            
+            fileContainer.appendChild(header);
+            fileContainer.appendChild(table);
+            fileContainer.appendChild(moreBtn);
+        } else {
+            fileContainer.appendChild(header);
+            fileContainer.appendChild(table);
+        }
+        
+        container.appendChild(fileContainer);
+    });
+
+    document.getElementById('result-container').style.display = 'block';
+}
+
+// 全局状态管理
+let isProcessing = false;
+
+async function startProcessing() {
+    if (isProcessing) return;
+    
+    const fileUrl = document.getElementById('fileUrl').value.trim();
+    const btn = document.getElementById('processBtn');
+    
+    try {
+        // 验证输入
+        if (!validateUrl(fileUrl)) {
+            throw new Error('无效的文件链接，请使用http/https协议');
+        }
+
+        // 更新UI状态
+        isProcessing = true;
+        btn.disabled = true;
+        updateStatus('正在连接Coze服务...', 'processing');
+
+        // 调用Coze API
+        const response = await callCozeAPI(fileUrl);
+        
+        // 调试输出
+        console.log('API响应:', response);
+        updateStatus(`API响应已记录到控制台，响应状态: ${response ? '成功' : '失败'}`, 'info');
+        
+        // 处理数据
+        updateStatus('正在解析数据...');
+        const csvData = processResponse(response);
+        
+        // 展示结果
+        updateStatus('解析完成，结果如下：', 'success');
+        renderResults(csvData);
+    } catch (error) {
+        console.error('处理错误:', error);
+        updateStatus(`错误：${error.message}`, 'error');
+    } finally {
+        isProcessing = false;
+        btn.disabled = false;
+    }
+}
+
+function validateUrl(url) {
+    try {
+        const urlObj = new URL(url);
+        return ['http:', 'https:'].includes(urlObj.protocol);
+    } catch {
+        return false;
+    }
+}
+
+async function callCozeAPI(fileUrl) {
+    const API_ENDPOINT = 'https://api.coze.cn/v1/workflow/run';
+    const API_TOKEN = 'pat_CSZdsOlscr4EnHvK8bPUHwXqWHgqNT3WR7rEO0TqppmtSIfgv5M8mVfTTyXCXQTA';  // 请替换实际Token
+    const WORKFLOW_ID = '7483366197490384948';     // 请替换实际ID
+    const APP_ID = '7483340699518615615';           // 请替换实际ID
+
+    const response = await fetch(API_ENDPOINT, {
+        method: 'POST',
+        headers: {
+            "Authorization": `Bearer ${API_TOKEN}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            parameters: {
+                extract_request: document.getElementById('extractRequest').value.trim(),
+                input: fileUrl
+            },
+            workflow_id: WORKFLOW_ID,
+            app_id: APP_ID
+        })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `API请求失败：HTTP ${response.status}`);
+    }
+
+    return response.json();
+}
+
+function processResponse(response) {
+    try {
+        if (!response?.data) {
+            throw new Error('API返回数据格式异常');
+        }
+
+        // 解析data字段中的JSON字符串
+        const data = JSON.parse(response.data);
+        if (!data?.data) {
+            throw new Error('API返回数据格式异常');
+        }
+
+        // 解析嵌套的JSON字符串
+        const outputData = JSON.parse(data.data);
+        if (!Array.isArray(outputData)) {
+            throw new Error('API返回数据格式异常');
+        }
+
+        return outputData;
+    } catch (error) {
+        throw new Error(`数据解析失败：${error.message}`);
+    }
+}
+
+function downloadCSV(outputList, filename) {
+    if (!outputList || outputList.length === 0) {
+        throw new Error('没有有效数据可以导出');
+    }
+
+    const blob = new Blob([outputList[0].output], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+}
+
+function updateStatus(message, type = 'info') {
+    const statusDiv = document.getElementById('status');
+    statusDiv.className = `status-${type}`;
+    statusDiv.textContent = message;
+}
+</script>
+</body>
+</html>
