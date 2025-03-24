@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>教研文档AI</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+        }
+
+        .input-container {
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.25);
+            transform: translateY(-1px);
+        }
+
+        .input-group input:hover {
+            border-color: #adb5bd;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+
+        button:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        #status {
+            min-height: 2rem;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-processing {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .download-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .download-btn:hover {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+
+        .download-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            border: 1px solid #dee2e6;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        th {
+            background-color: #f8f9fa;
+        }
+
+        .file-item {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+
+        .scroll-container {
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>教研工作流-文件处理</h1>
+        <div class="input-container">
+            <div class="input-group">
+                <label for="fileUrl">文档链接：</label>
+                <input 
+                    type="text" 
+                    id="fileUrl" 
+                    placeholder="请输入文件链接 (支持http/https)"
+                    autocomplete="off"
+                    spellcheck="false"
+                    value="https://p26-bot-workflow-sign.byteimg.com/tos-cn-i-mdko3gqilj/388835cc8304406ba7688c8dc2359368.csv~tplv-mdko3gqilj-image.image?rk3s=81d4c505&x-expires=1773912139&x-signature=WTzlEiGA%2B1A1imA9coshC8I2ieM%3D&x-wf-file_name=processed_data_1.csv"
+                >
+            </div>
+            <div class="input-group">
+                <label for="extractRequest">文档处理要求：</label>
+                <input
+                    type="text"
+                    id="extractRequest"
+                    placeholder="请输入提取要求"
+                    autocomplete="off"
+                    spellcheck="false"
+                    value="根据列表单词及其汉语词义，生成1个最适合初中生的、最简短的语境情况下的英语例句和该例句的汉语翻译” → sheet1输出新增列：例句（“I eat an  apple every day.”）、例句汉语意思（“我每天吃一个苹果。"
+                >
+            </div>
+            <button onclick="startProcessing()" id="processBtn">开始处理</button>
+        </div>
+        <div id="status"></div>
+        <div id="result-container" style="margin-top: 2rem; display: none;">
+            <h3>解析结果：</h3>
+            <div id="file-list"></div>
+        </div>
+    </div>
+
+<script>
+// 增强版渲染函数
+function renderResults(outputList) {
+    const container = document.getElementById('file-list');
+    container.innerHTML = '';
+    
+    if (!outputList || outputList.length === 0) {
+        console.error('无有效数据');
+        return;
+    }
+
+    outputList.forEach((item, index) => {
+        if (!item?.output) {
+            console.warn(`文件${index + 1}无有效数据`);
+            return;
+        }
+
+        // 创建文件容器
+        const fileContainer = document.createElement('div');
+        fileContainer.className = 'file-item';
+
+        // 头部区域
+        const header = document.createElement('div');
+        header.style.cssText = `
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        `;
+
+        // 标题
+        const title = document.createElement('h4');
+        title.textContent = `文件 ${index + 1}`;
+        title.style.margin = '0';
+
+        // 下载按钮
+        const downloadBtn = document.createElement('button');
+        downloadBtn.textContent = '下载CSV';
+        downloadBtn.className = 'download-btn';
+        downloadBtn.onclick = () => downloadCSV([item], `processed_data_${index + 1}.csv`);
+
+        header.appendChild(title.cloneNode(true));
+        header.appendChild(downloadBtn);
+
+        // 表格容器
+        const tableWrapper = document.createElement('div');
+        tableWrapper.className = 'scroll-container';
+
+        // 解析CSV内容
+        const csvContent = item.output;
+        const allLines = csvContent.split('\n').filter(line => line.trim() !== '');
+        const maxPreviewLines = 5;
+
+        // 创建表格
+        const table = document.createElement('table');
+        allLines.slice(0, maxPreviewLines).forEach((line, lineIndex) => {
+            const row = document.createElement('tr');
+            line.split(',').forEach((cell, cellIndex) => {
+                const cellElement = lineIndex === 0 ? 
+                    document.createElement('th') : 
+                    document.createElement('td');
+                cellElement.textContent = cell.trim();
+                row.appendChild(cellElement);
+            });
+            table.appendChild(row);
+        });
+
+        // 查看更多按钮
+        if (allLines.length > maxPreviewLines) {
+            const moreBtn = document.createElement('button');
+            moreBtn.textContent = '展开完整表格 ▼';
+            moreBtn.style.cssText = `
+                margin-top: 1rem;
+                background: #6c757d;
+                color: white;
+            `;
+            moreBtn.onclick = () => {
+                table.innerHTML = '';
+                allLines.forEach((line, lineIndex) => {
+                    const row = document.createElement('tr');
+                    line.split(',').forEach((cell, cellIndex) => {
+                        const cellElement = lineIndex === 0 ? 
+                            document.createElement('th') : 
+                            document.createElement('td');
+                        cellElement.textContent = cell.trim();
+                        row.appendChild(cellElement);
+                    });
+                    table.appendChild(row);
+                });
+                moreBtn.style.display = 'none';
+            };
+            fileContainer.appendChild(moreBtn);
+        }
+
+        // 组装元素
+        tableWrapper.appendChild(table);
+        fileContainer.appendChild(header);
+        fileContainer.appendChild(tableWrapper);
+        container.appendChild(fileContainer);
+    });
+
+    // 显示结果容器
+    document.getElementById('result-container').style.display = 'block';
+}
+
+// 全局状态管理
+let isProcessing = false;
+
+async function startProcessing() {
+    if (isProcessing) return;
+    
+    const fileUrl = document.getElementById('fileUrl').value.trim();
+    const btn = document.getElementById('processBtn');
+    
+    try {
+        // 输入验证
+        if (!validateUrl(fileUrl)) {
+            throw new Error('无效的文件链接，请使用http/https协议');
+        }
+
+        // 更新UI状态
+        isProcessing = true;
+        btn.disabled = true;
+        updateStatus('正在连接服务...', 'processing');
+
+        // API调用
+        const response = await callCozeAPI(fileUrl);
+        console.log('API原始响应:', response);
+
+        // 数据处理
+        updateStatus('解析数据中...', 'processing');
+        const csvData = processResponse(response);
+        console.log('处理后的数据:', csvData);
+
+        // 展示结果
+        updateStatus('解析完成', 'success');
+        renderResults(csvData);
+    } catch (error) {
+        console.error('处理错误:', error);
+        updateStatus(`错误：${error.message}`, 'error');
+    } finally {
+        isProcessing = false;
+        btn.disabled = false;
+    }
+}
+
+function validateUrl(url) {
+    try {
+        return new URL(url).protocol.match(/^https?:$/);
+    } catch {
+        return false;
+    }
+}
+
+async function callCozeAPI(fileUrl) {
+    const API_ENDPOINT = 'https://api.coze.cn/v1/workflow/run';
+    const API_TOKEN = 'pat_CSZdsOlscr4EnHvK8bPUHwXqWHgqNT3WR7rEO0TqppmtSIfgv5M8mVfTTyXCXQTA';
+    const WORKFLOW_ID = '7485239233420394531';
+    const APP_ID = '7483340699518615615';
+
+    const response = await fetch(API_ENDPOINT, {
+        method: 'POST',
+        headers: {
+            "Authorization": `Bearer ${API_TOKEN}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            parameters: {
+                process_request: document.getElementById('extractRequest').value.trim(),
+                input: fileUrl
+            },
+            workflow_id: WORKFLOW_ID,
+            app_id: APP_ID
+        })
+    });
+
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || `API请求失败：HTTP ${response.status}`);
+    }
+
+    return response.json();
+}
+
+function processResponse(response) {
+    try {
+        // 多层解析结构：data字段是字符串需要二次解析
+        const data = JSON.parse(response.data); // 第一步解析data字符串
+        const output = data.output;             // 第二步获取output
+        
+        if (!output) {
+            throw new Error('output字段存在于data字段的嵌套结构中');
+        }
+
+        return [{ output }];
+    } catch (error) {
+        throw new Error(`数据解析失败：请确认API返回结构（${error.message}）`);
+    }
+}
+
+function downloadCSV(outputList, filename) {
+    if (!outputList?.length) return;
+    
+    // 解决中文乱码
+    const BOM = '\uFEFF';
+    const csvContent = BOM + outputList[0].output;
+    
+    const blob = new Blob([csvContent], { 
+        type: 'text/csv;charset=utf-8;' 
+    });
+    
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+}
+
+function updateStatus(message, type = 'info') {
+    const statusDiv = document.getElementById('status');
+    statusDiv.className = `status-${type}`;
+    statusDiv.textContent = message;
+}
+</script>
+</body>
+</html>
