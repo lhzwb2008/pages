@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>试卷切题识别</title>
+    <!-- 添加CryptoJS库，用于计算HMAC-SHA1签名 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #0066cc;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .upload-container {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .upload-container.dragover {
+            border-color: #0066cc;
+            background-color: #e6f2ff;
+        }
+        .hidden {
+            display: none;
+        }
+        .preview-container {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        #preview {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .btn {
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .btn:hover {
+            background-color: #004c99;
+        }
+        .btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .options-container {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+        .option-group {
+            margin-bottom: 15px;
+        }
+        label {
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        select {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            min-width: 200px;
+        }
+        .loading {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .loading-spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #0066cc;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .result-container {
+            margin-top: 30px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+        }
+        .result-title {
+            margin-top: 0;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .question-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .question-text {
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        .question-block {
+            margin-bottom: 10px;
+            padding: 5px;
+            background-color: #f5f5f5;
+            border-radius: 3px;
+        }
+        .option-group input[type="text"],
+        .option-group input[type="password"] {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            width: 100%;
+            max-width: 300px;
+            box-sizing: border-box;
+        }
+        
+        .option-group input:focus {
+            border-color: #0066cc;
+            outline: none;
+            box-shadow: 0 0 3px rgba(0,102,204,0.3);
+        }
+        
+        .required-field {
+            color: #ff4d4f;
+            margin-left: 3px;
+        }
+        .error-message {
+            background-color: #fff2f0;
+            border: 1px solid #ffccc7;
+            color: #ff4d4f;
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+            word-break: break-word;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .error-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        .info-table td {
+            padding: 8px;
+            border: 1px solid #eee;
+        }
+        
+        .info-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .page-info {
+            margin-bottom: 30px;
+            background-color: #f5f9ff;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        .word-blocks-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .word-block {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        
+        .word-block-header {
+            background-color: #f0f0f0;
+            padding: 5px 10px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .word-block-content {
+            padding: 10px;
+            background-color: white;
+        }
+        
+        .word-block-info {
+            padding: 5px 10px;
+            background-color: #fafafa;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .question-info {
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        
+        /* 添加绘图相关样式 */
+        .canvas-container {
+            position: relative;
+            margin: 20px auto;
+            max-width: 100%;
+            overflow: auto;
+        }
+        
+        #drawCanvas {
+            max-width: 100%;
+            border: 1px solid #ddd;
+            display: block;
+            margin: 0 auto;
+        }
+        
+        .draw-controls {
+            margin: 10px 0;
+            text-align: center;
+        }
+        
+        .tab-container {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .tab-header {
+            display: flex;
+            background-color: #f5f5f5;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .tab-button {
+            padding: 10px 15px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            color: #666;
+        }
+        
+        .tab-button.active {
+            background-color: #fff;
+            color: #0066cc;
+            border-bottom: 2px solid #0066cc;
+        }
+        
+        .tab-content {
+            padding: 15px;
+            display: none;
+            background-color: #fff;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .toggle-button {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+        
+        .toggle-button.active {
+            background-color: #e6f2ff;
+            border-color: #0066cc;
+            color: #0066cc;
+        }
+    </style>
+</head>
+<body>
+    <h1>试卷切题识别</h1>
+    
+    <div class="upload-container" id="dropArea">
+        <p>拖拽图片到此处或点击上传</p>
+        <input type="file" id="fileInput" accept="image/*" class="hidden">
+        <button class="btn" id="uploadBtn">选择图片</button>
+    </div>
+    
+    <div class="preview-container hidden" id="previewContainer">
+        <h3>预览图片</h3>
+        <img id="preview" src="" alt="预览图片">
+    </div>
+    
+    <div class="options-container">
+        <div class="option-group">
+            <label for="cutType">切题类型：</label>
+            <select id="cutType">
+                <option value="question">题目</option>
+                <option value="answer">答案</option>
+            </select>
+        </div>
+        
+        <div class="option-group">
+            <label for="imageType">图片类型：</label>
+            <select id="imageType">
+                <option value="scan">扫描图</option>
+                <option value="photo">实拍图</option>
+            </select>
+        </div>
+        
+        <div class="option-group">
+            <label for="subject">年级学科：</label>
+            <select id="subject">
+                <option value="default">默认</option>
+                <option value="Math">数学</option>
+                <option value="PrimarySchool_Math">小学数学</option>
+                <option value="JHighSchool_Math">初中数学</option>
+                <option value="Chinese">语文</option>
+                <option value="PrimarySchool_Chinese">小学语文</option>
+                <option value="JHighSchool_Chinese">初中语文</option>
+                <option value="English">英语</option>
+                <option value="PrimarySchool_English">小学英语</option>
+                <option value="JHighSchool_English">初中英语</option>
+                <option value="Physics">物理</option>
+                <option value="JHighSchool_Physics">初中物理</option>
+                <option value="Chemistry">化学</option>
+                <option value="JHighSchool_Chemistry">初中化学</option>
+                <option value="Biology">生物</option>
+                <option value="JHighSchool_Biology">初中生物</option>
+                <option value="History">历史</option>
+                <option value="JHighSchool_History">初中历史</option>
+                <option value="Geography">地理</option>
+                <option value="JHighSchool_Geography">初中地理</option>
+                <option value="Politics">政治</option>
+                <option value="JHighSchool_Politics">初中政治</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="text-center">
+        <button class="btn" id="recognizeBtn" disabled>识别图片</button>
+    </div>
+    
+    <div id="loadingContainer" class="loading hidden">
+        <div class="loading-spinner"></div>
+        <p>正在识别中，请稍候...</p>
+    </div>
+    
+    <div id="errorContainer" class="error-message hidden">
+        <div class="error-title">错误信息：</div>
+        <div id="errorContent"></div>
+    </div>
+    
+    <div id="resultContainer" class="result-container hidden">
+        <h2 class="result-title">识别结果</h2>
+        
+        <!-- 添加标签页 -->
+        <div class="tab-container">
+            <div class="tab-header">
+                <button class="tab-button active" data-tab="tab-visualization">可视化结果</button>
+                <button class="tab-button" data-tab="tab-structured">结构化数据</button>
+                <button class="tab-button" data-tab="tab-raw">原始数据</button>
+            </div>
+            
+            <!-- 可视化标签页 -->
+            <div id="tab-visualization" class="tab-content active">
+                <div class="draw-controls">
+                    <button id="toggleAllBtn" class="toggle-button">显示所有</button>
+                    <button id="toggleQuestionsBtn" class="toggle-button active">仅显示题目</button>
+                    <button id="toggleBlocksBtn" class="toggle-button">仅显示文字块</button>
+                    <button id="clearDrawingBtn" class="toggle-button">清除绘制</button>
+                </div>
+                <div class="canvas-container">
+                    <canvas id="drawCanvas"></canvas>
+                </div>
+            </div>
+            
+            <!-- 结构化数据标签页 -->
+            <div id="tab-structured" class="tab-content">
+                <div id="structuredContent"></div>
+            </div>
+            
+            <!-- 原始数据标签页 -->
+            <div id="tab-raw" class="tab-content">
+                <pre id="rawContent" style="white-space: pre-wrap; max-height: 400px; overflow: auto;"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API相关配置 - 请在此处修改您的阿里云AccessKey
+        const ACCESS_KEY_ID = "LTAI5tQn3FKQrz4Nsj5AhNqE"; // 在此修改您的AccessKey ID
+        const ACCESS_KEY_SECRET = "pGGhhS4MmIkbp2TcvBqjLE7fPWJlmL"; // 在此修改您的AccessKey Secret
+        
+        // DOM元素
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const dropArea = document.getElementById('dropArea');
+        const preview = document.getElementById('preview');
+        const previewContainer = document.getElementById('previewContainer');
+        const recognizeBtn = document.getElementById('recognizeBtn');
+        const loadingContainer = document.getElementById('loadingContainer');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultContent = document.getElementById('resultContent');
+        const errorContainer = document.getElementById('errorContainer');
+        const errorContent = document.getElementById('errorContent');
+        
+        // 选项元素
+        const cutType = document.getElementById('cutType');
+        const imageType = document.getElementById('imageType');
+        const subject = document.getElementById('subject');
+        
+        // 当前选择的文件
+        let currentFile = null;
+        
+        // 上传按钮点击事件
+        uploadBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        // 文件选择变化事件
+        fileInput.addEventListener('change', handleFileSelect);
+        
+        // 拖拽事件
+        dropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropArea.classList.add('dragover');
+        });
+        
+        dropArea.addEventListener('dragleave', () => {
+            dropArea.classList.remove('dragover');
+        });
+        
+        dropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropArea.classList.remove('dragover');
+            
+            if (e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect(e);
+            }
+        });
+        
+        // 识别按钮点击事件
+        recognizeBtn.addEventListener('click', startRecognition);
+        
+        // 处理文件选择
+        function handleFileSelect(e) {
+            const files = e.target.files || e.dataTransfer.files;
+            
+            if (files.length === 0) return;
+            
+            const file = files[0];
+            
+            // 验证文件类型
+            if (!file.type.match('image.*')) {
+                alert('请选择图片文件！');
+                return;
+            }
+            
+            currentFile = file;
+            
+            // 显示预览
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                preview.src = e.target.result;
+                previewContainer.classList.remove('hidden');
+                recognizeBtn.disabled = false;
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // 开始识别
+        function startRecognition() {
+            if (!currentFile) {
+                alert('请先选择图片！');
+                return;
+            }
+            
+            // 显示加载状态
+            loadingContainer.classList.remove('hidden');
+            resultContainer.classList.add('hidden');
+            errorContainer.classList.add('hidden'); // 隐藏错误信息
+            recognizeBtn.disabled = true;
+            
+            // 调用API获取识别结果
+            callAliCloudAPI(currentFile)
+                .then(response => {
+                    displayResult(response);
+                    loadingContainer.classList.add('hidden');
+                    recognizeBtn.disabled = false;
+                })
+                .catch(error => {
+                    console.error('API调用出错:', error);
+                    // 在页面上显示错误信息
+                    errorContent.innerHTML = `
+                        <p>${error.message || '未知错误'}</p>
+                        ${error.details ? `<pre>${JSON.stringify(error.details, null, 2)}</pre>` : ''}
+                    `;
+                    errorContainer.classList.remove('hidden');
+                    loadingContainer.classList.add('hidden');
+                    recognizeBtn.disabled = false;
+                });
+        }
+        
+        // 显示结果
+        function displayResult(response) {
+            if (!response || !response.Data) {
+                resultContent.innerHTML = '<p>识别失败，请重试</p>';
+                resultContainer.classList.remove('hidden');
+                return;
+            }
+            
+            try {
+                const data = JSON.parse(response.Data);
+                
+                // 在原始数据标签页显示完整JSON
+                document.getElementById('rawContent').textContent = JSON.stringify(data, null, 2);
+                
+                // 在结构化数据标签页显示结构化数据
+                displayStructuredData(data);
+                
+                // 绘制可视化结果
+                drawRecognitionResults(data);
+                
+                resultContainer.classList.remove('hidden');
+            } catch (error) {
+                console.error('解析结果出错:', error);
+                resultContent.innerHTML = '<p>结果解析失败，请重试</p>';
+                resultContainer.classList.remove('hidden');
+            }
+        }
+        
+        // 显示结构化数据
+        function displayStructuredData(data) {
+            let html = '';
+            
+            if (data.page_list && data.page_list.length > 0) {
+                data.page_list.forEach((page, pageIndex) => {
+                    // 添加页面信息展示
+                    html += `
+                        <div class="page-info">
+                            <h3>页面信息 (${pageIndex + 1}/${data.page_list.length})</h3>
+                            <table class="info-table">
+                                <tr>
+                                    <td><strong>页码(page_id)</strong></td>
+                                    <td>${page.page_id || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>文档索引(doc_index)</strong></td>
+                                    <td>${page.doc_index || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>角度(angle)</strong></td>
+                                    <td>${page.angle || 0}° ${getAngleDescription(page.angle || 0)}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>校正后尺寸(width × height)</strong></td>
+                                    <td>${page.width || '-'} × ${page.height || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>原图尺寸(orgWidth × orgHeight)</strong></td>
+                                    <td>${page.orgWidth || '-'} × ${page.orgHeight || '-'}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    `;
+                    
+                    // 添加题目列表信息
+                    if (page.subject_list && page.subject_list.length > 0) {
+                        html += `<h3>识别到的题目列表 (${page.subject_list.length}题)：</h3>`;
+                        
+                        page.subject_list.forEach((subject, index) => {
+                            html += `
+                                <div class="question-item">
+                                    <h3>题目 ${subject.ids ? subject.ids.join(', ') : `#${index+1}`}</h3>
+                                    <div class="question-info">
+                                        <p><strong>是否跨页(is_multipage)：</strong>${subject.is_multipage ? '是' : '否'}</p>
+                                    </div>
+                                    <div class="question-text">${subject.text || ''}</div>
+                                    
+                                    <h4>文字块信息(prism_wordsInfo)：</h4>
+                                    <div class="word-blocks">
+                                        ${renderWordBlocks(subject.prism_wordsInfo || [])}
+                                    </div>
+                                    
+                                    ${subject.content_list_info && subject.content_list_info.length > 0 ? `
+                                        <h4>内容列表信息(content_list_info)：</h4>
+                                        <div class="content-list">
+                                            ${renderContentList(subject.content_list_info || [])}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `;
+                        });
+                    } else {
+                        html += '<p>未识别到题目内容</p>';
+                    }
+                });
+            } else {
+                html = '<p>未识别到页面内容</p>';
+            }
+            
+            document.getElementById('structuredContent').innerHTML = html;
+        }
+        
+        // 渲染内容列表信息
+        function renderContentList(contentList) {
+            if (!contentList || contentList.length === 0) {
+                return '<p>无内容列表信息</p>';
+            }
+            
+            let html = '<div class="content-list-container">';
+            
+            contentList.forEach((content, index) => {
+                html += `
+                    <div class="word-block">
+                        <div class="word-block-header">内容块 #${index+1}</div>
+                        <div class="word-block-content">
+                            <p><strong>文档索引(doc_index)：</strong>${content.doc_index || '-'}</p>
+                            ${content.pos ? `
+                                <div class="word-block-info">
+                                    <small>坐标位置：左上(${content.pos[0]?.x || '-'},${content.pos[0]?.y || '-'}), 
+                                    右上(${content.pos[1]?.x || '-'},${content.pos[1]?.y || '-'}), 
+                                    右下(${content.pos[2]?.x || '-'},${content.pos[2]?.y || '-'}), 
+                                    左下(${content.pos[3]?.x || '-'},${content.pos[3]?.y || '-'})</small>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            return html;
+        }
+        
+        // 渲染文字块信息
+        function renderWordBlocks(wordInfos) {
+            if (!wordInfos || wordInfos.length === 0) {
+                return '<p>无文字块信息</p>';
+            }
+            
+            let html = '<div class="word-blocks-container">';
+            
+            wordInfos.forEach((wordInfo, index) => {
+                html += `
+                    <div class="word-block">
+                        <div class="word-block-header">文字块 #${index+1}</div>
+                        <div class="word-block-content">${wordInfo.word || ''}</div>
+                        <div class="word-block-info">
+                            ${wordInfo.angle !== undefined ? `<small>角度(angle): ${wordInfo.angle}</small><br>` : ''}
+                            ${wordInfo.height !== undefined ? `<small>高度(height): ${wordInfo.height}</small><br>` : ''}
+                            ${wordInfo.width !== undefined ? `<small>宽度(width): ${wordInfo.width}</small><br>` : ''}
+                            ${wordInfo.pos ? `
+                                <small>坐标位置(pos)：左上(${wordInfo.pos[0]?.x || '-'},${wordInfo.pos[0]?.y || '-'}), 
+                                右上(${wordInfo.pos[1]?.x || '-'},${wordInfo.pos[1]?.y || '-'}), 
+                                右下(${wordInfo.pos[2]?.x || '-'},${wordInfo.pos[2]?.y || '-'}), 
+                                左下(${wordInfo.pos[3]?.x || '-'},${wordInfo.pos[3]?.y || '-'})</small>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            return html;
+        }
+        
+        // 添加绘图相关功能
+        let recognizedData = null;
+        let drawMode = 'questions'; // 'all', 'questions', 'blocks'
+        
+        // 绘制识别结果
+        function drawRecognitionResults(data) {
+            recognizedData = data;
+            const canvas = document.getElementById('drawCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // 清空画布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (!data.page_list || data.page_list.length === 0) return;
+            
+            const page = data.page_list[0]; // 获取第一页
+            
+            // 创建图像对象并加载预览图片
+            const img = new Image();
+            img.onload = function() {
+                // 设置Canvas尺寸与图像一致
+                canvas.width = img.width;
+                canvas.height = img.height;
+                
+                // 绘制原图
+                ctx.drawImage(img, 0, 0, img.width, img.height);
+                
+                // 根据当前模式绘制识别结果
+                drawByCurrentMode();
+            };
+            img.src = preview.src; // 使用预览图的数据源
+        }
+        
+        // 根据当前模式绘制
+        function drawByCurrentMode() {
+            if (!recognizedData) return;
+            
+            const canvas = document.getElementById('drawCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // 先清除原有绘制（保留图像）
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.drawImage(preview, 0, 0, canvas.width, canvas.height);
+            
+            const page = recognizedData.page_list[0]; // 假设显示第一页
+            
+            if (drawMode === 'all' || drawMode === 'questions') {
+                // 绘制题目区域
+                if (page.subject_list && page.subject_list.length > 0) {
+                    page.subject_list.forEach((subject, index) => {
+                        // 如果有content_list_info，使用它的坐标
+                        if (subject.content_list_info && subject.content_list_info.length > 0) {
+                            subject.content_list_info.forEach(content => {
+                                if (content.pos) {
+                                    drawPolygon(ctx, content.pos, `rgba(255, 0, 0, 0.3)`, `题目 ${subject.ids ? subject.ids.join(', ') : `#${index+1}`}`);
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+            
+            if (drawMode === 'all' || drawMode === 'blocks') {
+                // 绘制文字块
+                if (page.subject_list && page.subject_list.length > 0) {
+                    page.subject_list.forEach(subject => {
+                        if (subject.prism_wordsInfo && subject.prism_wordsInfo.length > 0) {
+                            subject.prism_wordsInfo.forEach((wordInfo, wordIndex) => {
+                                if (wordInfo.pos) {
+                                    drawPolygon(ctx, wordInfo.pos, `rgba(0, 128, 255, 0.3)`, wordInfo.word || `块 #${wordIndex+1}`);
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+        }
+        
+        // 绘制多边形
+        function drawPolygon(ctx, points, fillColor, label) {
+            if (!points || points.length < 3) return;
+            
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            
+            for (let i = 1; i < points.length; i++) {
+                ctx.lineTo(points[i].x, points[i].y);
+            }
+            
+            ctx.closePath();
+            ctx.fillStyle = fillColor;
+            ctx.fill();
+            
+            ctx.strokeStyle = fillColor.replace('0.3', '0.8');
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // 添加标签
+            if (label) {
+                // 计算中心点
+                let centerX = 0, centerY = 0;
+                points.forEach(point => {
+                    centerX += point.x;
+                    centerY += point.y;
+                });
+                centerX /= points.length;
+                centerY /= points.length;
+                
+                ctx.font = '12px Arial';
+                ctx.fillStyle = 'black';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(label, centerX, centerY);
+            }
+        }
+        
+        // 添加标签页切换功能
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                // 移除所有标签页和按钮的活跃状态
+                document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                
+                // 添加当前标签页和按钮的活跃状态
+                button.classList.add('active');
+                document.getElementById(button.getAttribute('data-tab')).classList.add('active');
+            });
+        });
+        
+        // 添加绘图控制按钮事件
+        document.getElementById('toggleAllBtn').addEventListener('click', () => {
+            setDrawMode('all');
+        });
+        
+        document.getElementById('toggleQuestionsBtn').addEventListener('click', () => {
+            setDrawMode('questions');
+        });
+        
+        document.getElementById('toggleBlocksBtn').addEventListener('click', () => {
+            setDrawMode('blocks');
+        });
+        
+        document.getElementById('clearDrawingBtn').addEventListener('click', () => {
+            clearDrawing();
+        });
+        
+        // 设置绘图模式
+        function setDrawMode(mode) {
+            drawMode = mode;
+            
+            // 更新按钮状态
+            document.querySelectorAll('.toggle-button').forEach(btn => btn.classList.remove('active'));
+            
+            if (mode === 'all') {
+                document.getElementById('toggleAllBtn').classList.add('active');
+            } else if (mode === 'questions') {
+                document.getElementById('toggleQuestionsBtn').classList.add('active');
+            } else if (mode === 'blocks') {
+                document.getElementById('toggleBlocksBtn').classList.add('active');
+            }
+            
+            // 重新绘制
+            drawByCurrentMode();
+        }
+        
+        // 清除绘图
+        function clearDrawing() {
+            const canvas = document.getElementById('drawCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // 清空画布并重新绘制原图
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(preview, 0, 0, canvas.width, canvas.height);
+        }
+        
+        // 获取角度描述
+        function getAngleDescription(angle) {
+            angle = parseInt(angle);
+            switch(angle) {
+                case 0: return '(正向)';
+                case 90: return '(朝右)';
+                case 180: return '(朝下)';
+                case 270: return '(朝左)';
+                default: return '';
+            }
+        }
+        
+        // 实际项目中应该实现的API调用函数
+        async function callAliCloudAPI(file) {
+            try {
+                // 准备参数
+                const endpoint = "ocr-api.cn-hangzhou.aliyuncs.com";
+                const version = "2021-07-07";
+                const action = "RecognizeEduPaperCut";
+                
+                // 生成随机数
+                const signatureNonce = Math.random().toString(36).substring(2);
+                
+                // 生成时间戳 (ISO格式)
+                const timestamp = new Date().toISOString();
+                
+                // 创建请求参数
+                const params = {
+                    Action: action,
+                    AccessKeyId: ACCESS_KEY_ID,
+                    Format: "JSON",
+                    SignatureMethod: "HMAC-SHA1",
+                    SignatureNonce: signatureNonce,
+                    SignatureVersion: "1.0",
+                    Timestamp: timestamp,
+                    Version: version,
+                    CutType: cutType.value,
+                    ImageType: imageType.value
+                };
+                
+                // 如果选择了学科，添加到参数中
+                if (subject.value !== 'default') {
+                    params.Subject = subject.value;
+                }
+                
+                // 1. 将参数按字典排序
+                const sortedKeys = Object.keys(params).sort();
+                let canonicalizedQueryString = "";
+                sortedKeys.forEach(key => {
+                    canonicalizedQueryString += `&${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`;
+                });
+                canonicalizedQueryString = canonicalizedQueryString.substring(1); // 去掉开头的&
+                
+                // 2. 构造待签名字符串
+                const stringToSign = "POST&" + encodeURIComponent("/") + "&" + encodeURIComponent(canonicalizedQueryString);
+                
+                // 3. 计算签名
+                const key = ACCESS_KEY_SECRET + "&";
+                const signature = CryptoJS.HmacSHA1(stringToSign, key).toString(CryptoJS.enc.Base64);
+                
+                // 4. 将签名添加到参数中
+                params.Signature = signature;
+                
+                // 5. 构造请求URL
+                let url = `https://${endpoint}/?`;
+                for (const key in params) {
+                    url += `${key}=${encodeURIComponent(params[key])}&`;
+                }
+                url = url.substring(0, url.length - 1); // 去掉最后的&
+                
+                // 发送请求 - 直接发送文件二进制数据，不使用FormData
+                const response = await fetch(url, {
+                    method: "POST",
+                    body: file, // 直接发送File对象
+                    headers: {
+                        'Content-Type': 'application/octet-stream' // 指定为二进制流
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('API响应错误:', errorText);
+                    
+                    // 尝试解析错误信息为JSON
+                    let errorDetails;
+                    try {
+                        errorDetails = JSON.parse(errorText);
+                    } catch (e) {
+                        errorDetails = errorText;
+                    }
+                    
+                    const error = new Error(`HTTP error! status: ${response.status}`);
+                    error.details = errorDetails;
+                    throw error;
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('API调用出错:', error);
+                throw error;
+            }
+        }
+    </script>
+</body>
+</html> 
