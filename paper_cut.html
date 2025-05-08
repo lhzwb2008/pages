@@ -412,14 +412,8 @@
 
     <script>
         // API相关配置 - 请在此处修改您的阿里云AccessKey
-        // 使用简单编码方式存储密钥，避免GitHub直接检测
-        const _keyParts = [
-            String.fromCharCode(76,84,65,73,53,116,81,110,51,70,75,81,114,122,52,78,115,106,53,65,104,78,113,69),
-            String.fromCharCode(112,71,71,104,104,83,52,77,109,73,107,98,112,50,84,99,118,66,113,106,76,69,55,102,80,87,74,108,109,76)
-        ];
-        // 在实际使用时再解码获取真实密钥
-        function getAccessKeyID() { return _keyParts[0]; }
-        function getAccessKeySecret() { return _keyParts[1]; }
+        const ACCESS_KEY_ID = ""; // 在此修改您的AccessKey ID
+        const ACCESS_KEY_SECRET = ""; // 在此修改您的AccessKey Secret
         
         // DOM元素
         const fileInput = document.getElementById('fileInput');
@@ -900,7 +894,7 @@
                 // 创建请求参数
                 const params = {
                     Action: action,
-                    AccessKeyId: getAccessKeyID(),
+                    AccessKeyId: ACCESS_KEY_ID,
                     Format: "JSON",
                     SignatureMethod: "HMAC-SHA1",
                     SignatureNonce: signatureNonce,
@@ -928,7 +922,7 @@
                 const stringToSign = "POST&" + encodeURIComponent("/") + "&" + encodeURIComponent(canonicalizedQueryString);
                 
                 // 3. 计算签名
-                const key = getAccessKeySecret() + "&";
+                const key = ACCESS_KEY_SECRET + "&";
                 const signature = CryptoJS.HmacSHA1(stringToSign, key).toString(CryptoJS.enc.Base64);
                 
                 // 4. 将签名添加到参数中
