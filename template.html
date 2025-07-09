@@ -432,6 +432,9 @@
       
       initWithConfig() {
         // 使用代码中的配置初始化页面
+        // 更新浏览器标题栏
+        document.title = this.config.pageTitle;
+        // 更新页面标题元素
         this.pageTitle.textContent = this.config.pageTitle;
         this.pageTitleText.textContent = this.config.pageTitle;
         this.pageDescription.textContent = this.config.pageDescription;
