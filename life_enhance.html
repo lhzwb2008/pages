@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title id="page-title">Coze智能对话助手</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <style>
+    /* 样式设置 */
+    :root {
+      --primary-color: #4a90e2;
+      --secondary-color: #f5f7fa;
+      --text-color: #333;
+      --border-color: #ddd;
+      --success-color: #28a745;
+      --error-color: #dc3545;
+      --warning-color: #ffc107;
+      --chat-bg: #f8f9fa;
+      --user-msg-bg: #4a90e2;
+      --bot-msg-bg: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      color: var(--text-color);
+      background-color: var(--secondary-color);
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--primary-color), #357abd);
+      color: white;
+      padding: 20px 30px;
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    .description {
+      opacity: 0.9;
+      margin-bottom: 0;
+    }
+
+    .main-content {
+      height: 70vh;
+      min-height: 500px;
+    }
+
+    /* 聊天区域 */
+    .chat-area {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chat-header {
+      padding: 15px 20px;
+      border-bottom: 1px solid var(--border-color);
+      background-color: white;
+    }
+
+    .chat-title {
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 20px;
+      background-color: var(--chat-bg);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .message {
+      max-width: 80%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      word-wrap: break-word;
+      animation: fadeIn 0.3s ease-in;
+      line-height: 1.6;
+    }
+
+    .message pre {
+      background: #f4f4f4;
+      border-radius: 6px;
+      padding: 12px;
+      margin: 8px 0;
+      overflow-x: auto;
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+      font-size: 14px;
+    }
+
+    .message code {
+      background: #f4f4f4;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+      font-size: 14px;
+    }
+
+    .message pre code {
+      background: none;
+      padding: 0;
+    }
+
+    .message h1, .message h2, .message h3 {
+      margin: 12px 0 8px 0;
+      font-weight: 600;
+    }
+
+    .message h1 {
+      font-size: 1.5em;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 4px;
+    }
+
+    .message h2 {
+      font-size: 1.3em;
+    }
+
+    .message h3 {
+      font-size: 1.1em;
+    }
+
+    .message ul, .message ol {
+      margin: 8px 0;
+      padding-left: 20px;
+    }
+
+    .message li {
+      margin: 4px 0;
+    }
+
+    .message blockquote {
+      border-left: 4px solid #ddd;
+      margin: 8px 0;
+      padding: 8px 16px;
+      background: #f9f9f9;
+      font-style: italic;
+    }
+
+    .message table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 8px 0;
+    }
+
+    .message th, .message td {
+      border: 1px solid #ddd;
+      padding: 8px 12px;
+      text-align: left;
+    }
+
+    .message th {
+      background: #f4f4f4;
+      font-weight: 600;
+    }
+
+    .message a {
+      color: var(--primary-color);
+      text-decoration: none;
+    }
+
+    .message a:hover {
+      text-decoration: underline;
+    }
+
+    .message p {
+      margin: 8px 0;
+    }
+
+    .message strong {
+      font-weight: 600;
+    }
+
+    .message em {
+      font-style: italic;
+    }
+
+    .message.user {
+      align-self: flex-end;
+      background-color: var(--user-msg-bg);
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+
+    .message.bot {
+      align-self: flex-start;
+      background-color: var(--bot-msg-bg);
+      border: 1px solid var(--border-color);
+      border-bottom-left-radius: 4px;
+    }
+
+    .message.system {
+      align-self: center;
+      background-color: var(--warning-color);
+      color: #856404;
+      font-size: 14px;
+      max-width: 60%;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .chat-input-area {
+      padding: 20px;
+      background-color: white;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .input-container {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    .chat-input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      resize: none;
+      min-height: 44px;
+      max-height: 120px;
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .chat-input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+
+    .send-btn {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 12px 16px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 16px;
+      min-width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.3s;
+    }
+
+    .send-btn:hover:not(:disabled) {
+      background-color: #3a7bc8;
+    }
+
+    .send-btn:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+
+    .loading-dots {
+      display: inline-block;
+    }
+
+    .loading-dots::after {
+      content: '';
+      animation: dots 1.5s steps(4, end) infinite;
+    }
+
+    @keyframes dots {
+      0%, 20% { content: ''; }
+      40% { content: '.'; }
+      60% { content: '..'; }
+      80%, 100% { content: '...'; }
+    }
+
+    @media (max-width: 768px) {
+      .main-content {
+        height: 80vh;
+        min-height: 400px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1 id="page-header"><i class="fas fa-robot"></i> <span id="page-title-text">Coze智能对话助手</span></h1>
+      <p class="description" id="page-description">0配置即用的AI对话助手</p>
+    </header>
+
+    <div class="main-content">
+      <!-- 聊天区域 -->
+      <div class="chat-area">
+        <div class="chat-header">
+          <div class="chat-title" id="chat-title">
+            <i class="fas fa-comments"></i>
+            <span style="margin-left: 8px;" id="chat-title-text">智能助手</span>
+          </div>
+        </div>
+
+        <div class="chat-messages" id="chat-messages">
+          <div class="message system">
+            正在加载配置...
+          </div>
+        </div>
+
+        <div class="chat-input-area">
+          <div class="input-container">
+            <textarea 
+              id="chat-input" 
+              class="chat-input" 
+              placeholder="输入你的问题..."
+              rows="1"
+            ></textarea>
+            <button id="send-btn" class="send-btn" disabled>
+              <i class="fas fa-paper-plane"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==================== 配置区域 ====================
+    // 在这里修改你的Coze API配置信息
+    const COZE_CONFIG = {
+      // 基础配置
+      apiKey: 'pat_EiuAp0p1HvuY9sKUKwxnoRGV6Klh8zqyjnc7pWcvDq2J2jE8ZMvLCfTD3Bs4LcdK',           // 替换为你的Coze API Key
+      botId: '7522032800175063103',                 // 替换为你的Bot ID
+      apiBase: 'https://api.coze.cn',            // API基础地址，一般不需要修改
+      userId: 'user_123',                        // 用户ID，可自定义
+      systemPrompt: '你是一个有用的AI助手，请友好地回答用户的问题。',  // 系统提示词
+      
+      // 页面显示配置
+      pageTitle: '人生目标管理助手',               // 页面标题
+      pageDescription: '0配置即用的AI对话助手',    // 页面描述
+      chatTitle: '智能助手',                      // 聊天窗口标题
+      placeholder: '输入你的问题...'               // 输入框占位符
+    };
+    // ================================================
+
+    class CozeChat {
+      constructor() {
+        this.config = { ...COZE_CONFIG };
+        
+        this.conversationId = null;
+        this.isConnected = false;
+        this.isLoading = false;
+        
+        this.initElements();
+        this.bindEvents();
+        this.initWithConfig();
+      }
+      
+      initElements() {
+        // 页面元素
+        this.pageTitle = document.getElementById('page-title');
+        this.pageTitleText = document.getElementById('page-title-text');
+        this.pageDescription = document.getElementById('page-description');
+        
+        // 聊天元素
+        this.chatTitle = document.getElementById('chat-title');
+        this.chatTitleText = document.getElementById('chat-title-text');
+        this.chatMessages = document.getElementById('chat-messages');
+        this.chatInput = document.getElementById('chat-input');
+        this.sendBtn = document.getElementById('send-btn');
+      }
+      
+      bindEvents() {
+        this.sendBtn.addEventListener('click', () => this.sendMessage());
+        
+        this.chatInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            this.sendMessage();
+          }
+        });
+        
+        this.chatInput.addEventListener('input', () => {
+          this.autoResizeTextarea();
+          this.updateSendButton();
+        });
+      }
+      
+      autoResizeTextarea() {
+        this.chatInput.style.height = 'auto';
+        this.chatInput.style.height = Math.min(this.chatInput.scrollHeight, 120) + 'px';
+      }
+      
+      updateSendButton() {
+        const hasMessage = this.chatInput.value.trim().length > 0;
+        this.sendBtn.disabled = !hasMessage || !this.isConnected || this.isLoading;
+      }
+      
+      updateConnectionStatus() {
+        const hasApiKey = this.config.apiKey && this.config.apiKey !== 'your_coze_api_key_here';
+        const hasBotId = this.config.botId && this.config.botId !== 'your_bot_id_here';
+        
+        this.isConnected = hasApiKey && hasBotId;
+        this.updateSendButton();
+      }
+      
+
+      
+      initWithConfig() {
+        // 使用代码中的配置初始化页面
+        // 更新浏览器标题栏
+        document.title = this.config.pageTitle;
+        // 更新页面标题元素
+        this.pageTitle.textContent = this.config.pageTitle;
+        this.pageTitleText.textContent = this.config.pageTitle;
+        this.pageDescription.textContent = this.config.pageDescription;
+        this.chatTitleText.textContent = this.config.chatTitle;
+        this.chatInput.placeholder = this.config.placeholder;
+        
+        // 更新连接状态
+        this.updateConnectionStatus();
+        
+        // 如果配置完整，显示就绪消息
+        if (this.config.apiKey !== 'your_coze_api_key_here' && 
+            this.config.botId !== 'your_bot_id_here' && 
+            this.config.apiKey && this.config.botId) {
+          this.clearChat();
+          this.addSystemMessage('配置已加载，可以开始对话了！');
+        } else {
+          this.addSystemMessage('请在代码中配置API Key和Bot ID后刷新页面');
+        }
+      }
+      
+      clearChat() {
+        this.chatMessages.innerHTML = '<div class="message system">对话已清空</div>';
+        this.conversationId = null;
+      }
+      
+      addMessage(content, type = 'user', isMarkdown = false) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${type}`;
+        
+        if (isMarkdown && type === 'bot') {
+          // 配置marked选项
+          marked.setOptions({
+            breaks: true,
+            gfm: true,
+            highlight: function(code, lang) {
+              if (lang && hljs.getLanguage(lang)) {
+                try {
+                  return hljs.highlight(code, { language: lang }).value;
+                } catch (__) {}
+              }
+              return hljs.highlightAuto(code).value;
+            }
+          });
+          
+          messageDiv.innerHTML = marked.parse(content);
+        } else {
+          messageDiv.textContent = content;
+        }
+        
+        this.chatMessages.appendChild(messageDiv);
+        this.scrollToBottom();
+        
+        return messageDiv;
+      }
+      
+      addSystemMessage(content) {
+        return this.addMessage(content, 'system');
+      }
+      
+      scrollToBottom() {
+        this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+      }
+      
+      async sendMessage() {
+        const message = this.chatInput.value.trim();
+        if (!message || !this.isConnected || this.isLoading) return;
+        
+        // 添加用户消息
+        this.addMessage(message, 'user');
+        this.chatInput.value = '';
+        this.autoResizeTextarea();
+        
+        // 显示加载状态
+        this.isLoading = true;
+        this.updateSendButton();
+        
+        // 创建流式响应消息容器
+        const streamMessage = this.addMessage('', 'bot');
+        streamMessage.innerHTML = '<span class="loading-dots">正在思考</span>';
+        
+        try {
+          let hasContent = false;
+          
+          // 使用流式响应
+          const result = await this.callCozeAPI(message, (chunk, fullContent) => {
+            hasContent = true;
+            
+            // 配置marked选项
+            marked.setOptions({
+              breaks: true,
+              gfm: true,
+              highlight: function(code, lang) {
+                if (lang && hljs.getLanguage(lang)) {
+                  try {
+                    return hljs.highlight(code, { language: lang }).value;
+                  } catch (__) {}
+                }
+                return hljs.highlightAuto(code).value;
+              }
+            });
+            
+            // 实时渲染Markdown
+            streamMessage.innerHTML = marked.parse(fullContent);
+            this.scrollToBottom();
+          });
+          
+          // 如果流式响应没有内容，尝试从返回结果中获取
+          if (!hasContent && result && result.trim()) {
+            marked.setOptions({
+              breaks: true,
+              gfm: true,
+              highlight: function(code, lang) {
+                if (lang && hljs.getLanguage(lang)) {
+                  try {
+                    return hljs.highlight(code, { language: lang }).value;
+                  } catch (__) {}
+                }
+                return hljs.highlightAuto(code).value;
+              }
+            });
+            
+            streamMessage.innerHTML = marked.parse(result);
+            hasContent = true;
+          }
+          
+          // 如果仍然没有内容，显示默认消息
+          if (!hasContent) {
+            streamMessage.innerHTML = '抱歉，没有收到有效的回复。请检查API配置或稍后再试。';
+          }
+          
+        } catch (error) {
+          console.error('API调用失败:', error);
+          
+          // 显示错误消息
+          streamMessage.innerHTML = `<span style="color: var(--error-color);">错误: ${error.message}</span>`;
+        } finally {
+          this.isLoading = false;
+          this.updateSendButton();
+          this.scrollToBottom();
+        }
+      }
+      
+      async callCozeAPI(message, streamCallback = null) {
+        const url = `${this.config.apiBase}/open_api/v2/chat`;
+        
+        const requestData = {
+          conversation_id: this.conversationId,
+          bot_id: this.config.botId,
+          user: this.config.userId,
+          query: message,
+          stream: true  // 始终使用流式响应
+        };
+        
+        console.log('发送请求:', requestData);
+        
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.config.apiKey}`,
+            'Content-Type': 'application/json',
+            'Accept': 'text/event-stream'
+          },
+          body: JSON.stringify(requestData)
+        });
+        
+        console.log('响应状态:', response.status);
+        console.log('响应头:', Object.fromEntries(response.headers.entries()));
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP错误: ${response.status} - ${errorText}`);
+        }
+        
+        // 直接处理流式响应
+        return await this.handleStreamResponse(response, streamCallback);
+      }
+      
+      async handleStreamResponse(response, streamCallback) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let fullContent = '';
+        
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop(); // 保留最后一行（可能不完整）
+            
+            for (const line of lines) {
+              if (line.trim() === '') continue;
+              
+              let data = line;
+              // 处理Server-Sent Events格式 - 注意Coze的格式是 data:JSON 而不是 data: JSON
+              if (line.startsWith('data:')) {
+                data = line.slice(5).trim(); // 去掉 "data:" 前缀
+                if (data === '[DONE]') {
+                  return fullContent;
+                }
+              }
+              
+              try {
+                const parsed = JSON.parse(data);
+                console.log('流式事件:', parsed);
+                
+                // 处理Coze API的流式响应格式
+                if (parsed.event === 'message' && parsed.message) {
+                  // Coze格式: {event: 'message', message: {role: 'assistant', type: 'answer', content: '...', ...}}
+                  if (parsed.message.type === 'answer' && parsed.message.content) {
+                    const content = parsed.message.content;
+                    if (content) {
+                      fullContent += content;
+                      if (streamCallback) {
+                        streamCallback(content, fullContent);
+                      }
+                    }
+                  }
+                  
+                  // 保存对话ID
+                  if (parsed.conversation_id) {
+                    this.conversationId = parsed.conversation_id;
+                  }
+                } else if (parsed.event === 'done') {
+                  // 流式响应结束
+                  console.log('流式响应结束');
+                  break;
+                }
+                
+              } catch (e) {
+                console.warn('解析流式数据失败:', e, data);
+              }
+            }
+          }
+        } finally {
+          reader.releaseLock();
+        }
+        
+        return fullContent;
+      }
+    }
+    
+    // 初始化应用
+    document.addEventListener('DOMContentLoaded', () => {
+      new CozeChat();
+    });
+  </script>
+</body>
+</html>
