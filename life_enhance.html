@@ -78,12 +78,42 @@
       padding: 15px 20px;
       border-bottom: 1px solid var(--border-color);
       background-color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     .chat-title {
       font-weight: 600;
       display: flex;
       align-items: center;
+    }
+
+    .chat-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .chat-action-btn {
+      background: none;
+      border: 1px solid var(--border-color);
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--text-color);
+      transition: all 0.3s;
+    }
+
+    .chat-action-btn:hover {
+      background-color: var(--secondary-color);
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+    }
+
+    .chat-action-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
     .chat-messages {
@@ -323,6 +353,17 @@
             <i class="fas fa-comments"></i>
             <span style="margin-left: 8px;" id="chat-title-text">智能助手</span>
           </div>
+          <div class="chat-actions">
+            <button class="chat-action-btn" id="save-chat-btn" title="保存对话">
+              <i class="fas fa-save"></i> 保存
+            </button>
+            <button class="chat-action-btn" id="load-chat-btn" title="加载对话">
+              <i class="fas fa-folder-open"></i> 加载
+            </button>
+            <button class="chat-action-btn" id="clear-chat-btn" title="清空对话">
+              <i class="fas fa-trash"></i> 清空
+            </button>
+          </div>
         </div>
 
         <div class="chat-messages" id="chat-messages">
@@ -363,7 +404,11 @@
       pageTitle: '人生目标管理助手',               // 页面标题
       pageDescription: '0配置即用的AI对话助手',    // 页面描述
       chatTitle: '智能助手',                      // 聊天窗口标题
-      placeholder: '输入你的问题...'               // 输入框占位符
+      placeholder: '输入你的问题...',               // 输入框占位符
+      
+      // 对话记忆配置
+      enableMemory: true,                         // 是否启用对话记忆
+      maxHistoryLength: 20                        // 最大历史记录长度
     };
     // ================================================
 
@@ -374,6 +419,9 @@
         this.conversationId = null;
         this.isConnected = false;
         this.isLoading = false;
+        
+        // 添加对话历史数组
+        this.chatHistory = [];
         
         this.initElements();
         this.bindEvents();
@@ -392,6 +440,11 @@
         this.chatMessages = document.getElementById('chat-messages');
         this.chatInput = document.getElementById('chat-input');
         this.sendBtn = document.getElementById('send-btn');
+        
+        // 操作按钮
+        this.saveChatBtn = document.getElementById('save-chat-btn');
+        this.loadChatBtn = document.getElementById('load-chat-btn');
+        this.clearChatBtn = document.getElementById('clear-chat-btn');
       }
       
       bindEvents() {
@@ -408,6 +461,11 @@
           this.autoResizeTextarea();
           this.updateSendButton();
         });
+        
+        // 绑定操作按钮事件
+        this.saveChatBtn.addEventListener('click', () => this.saveChat());
+        this.loadChatBtn.addEventListener('click', () => this.loadChat());
+        this.clearChatBtn.addEventListener('click', () => this.clearChatConfirm());
       }
       
       autoResizeTextarea() {
@@ -444,12 +502,19 @@
         // 更新连接状态
         this.updateConnectionStatus();
         
+        // 如果启用了记忆功能，尝试从本地存储恢复对话
+        if (this.config.enableMemory) {
+          this.restoreFromLocalStorage();
+        }
+        
         // 如果配置完整，显示就绪消息
         if (this.config.apiKey !== 'your_coze_api_key_here' && 
             this.config.botId !== 'your_bot_id_here' && 
             this.config.apiKey && this.config.botId) {
-          this.clearChat();
-          this.addSystemMessage('配置已加载，可以开始对话了！');
+          if (!this.chatHistory.length) {
+            this.clearChat();
+            this.addSystemMessage('配置已加载，可以开始对话了！');
+          }
         } else {
           this.addSystemMessage('请在代码中配置API Key和Bot ID后刷新页面');
         }
@@ -458,6 +523,96 @@
       clearChat() {
         this.chatMessages.innerHTML = '<div class="message system">对话已清空</div>';
         this.conversationId = null;
+        // 清空对话历史
+        this.chatHistory = [];
+        
+        // 如果启用了本地存储，清除保存的数据
+        if (this.config.enableMemory) {
+          localStorage.removeItem('coze_chat_history');
+          localStorage.removeItem('coze_conversation_id');
+        }
+      }
+      
+      clearChatConfirm() {
+        if (confirm('确定要清空当前对话吗？此操作不可恢复。')) {
+          this.clearChat();
+        }
+      }
+      
+      saveChat() {
+        if (!this.config.enableMemory) {
+          alert('对话记忆功能未启用');
+          return;
+        }
+        
+        const chatData = {
+          conversationId: this.conversationId,
+          chatHistory: this.chatHistory,
+          timestamp: new Date().toISOString()
+        };
+        
+        // 保存到本地存储
+        localStorage.setItem('coze_chat_history', JSON.stringify(chatData));
+        
+        // 下载为文件
+        const blob = new Blob([JSON.stringify(chatData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `coze_chat_${new Date().getTime()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        this.addSystemMessage('对话已保存');
+      }
+      
+      loadChat() {
+        if (!this.config.enableMemory) {
+          alert('对话记忆功能未启用');
+          return;
+        }
+        
+        // 创建文件输入
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        
+        input.onchange = async (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          
+          try {
+            const text = await file.text();
+            const chatData = JSON.parse(text);
+            
+            // 恢复对话数据
+            this.conversationId = chatData.conversationId || null;
+            this.chatHistory = chatData.chatHistory || [];
+            
+            // 重新渲染对话界面
+            this.renderChatHistory();
+            
+            this.addSystemMessage(`已加载 ${chatData.timestamp ? new Date(chatData.timestamp).toLocaleString() : '历史'} 的对话`);
+          } catch (error) {
+            alert('加载对话失败：' + error.message);
+          }
+        };
+        
+        input.click();
+      }
+      
+      renderChatHistory() {
+        // 清空当前显示
+        this.chatMessages.innerHTML = '';
+        
+        // 重新渲染所有历史消息
+        this.chatHistory.forEach(msg => {
+          if (msg.role === 'user') {
+            this.addMessage(msg.content, 'user');
+          } else if (msg.role === 'assistant') {
+            this.addMessage(msg.content, 'bot', true);
+          }
+        });
       }
       
       addMessage(content, type = 'user', isMarkdown = false) {
@@ -502,8 +657,16 @@
         const message = this.chatInput.value.trim();
         if (!message || !this.isConnected || this.isLoading) return;
         
-        // 添加用户消息
+        // 添加用户消息到界面
         this.addMessage(message, 'user');
+        
+        // 添加用户消息到历史记录
+        this.chatHistory.push({
+          role: 'user',
+          content: message,
+          content_type: 'text'
+        });
+        
         this.chatInput.value = '';
         this.autoResizeTextarea();
         
@@ -517,10 +680,12 @@
         
         try {
           let hasContent = false;
+          let assistantReply = '';
           
           // 使用流式响应
           const result = await this.callCozeAPI(message, (chunk, fullContent) => {
             hasContent = true;
+            assistantReply = fullContent;
             
             // 配置marked选项
             marked.setOptions({
@@ -557,7 +722,20 @@
             });
             
             streamMessage.innerHTML = marked.parse(result);
+            assistantReply = result;
             hasContent = true;
+          }
+          
+          // 如果有回复内容，添加到历史记录
+          if (hasContent && assistantReply) {
+            this.chatHistory.push({
+              role: 'assistant',
+              content: assistantReply,
+              content_type: 'text'
+            });
+            
+            // 自动保存到本地存储
+            this.autoSaveToLocalStorage();
           }
           
           // 如果仍然没有内容，显示默认消息
@@ -580,12 +758,15 @@
       async callCozeAPI(message, streamCallback = null) {
         const url = `${this.config.apiBase}/open_api/v2/chat`;
         
+        // 构建请求数据，包含对话历史
         const requestData = {
           conversation_id: this.conversationId,
           bot_id: this.config.botId,
           user: this.config.userId,
           query: message,
-          stream: true  // 始终使用流式响应
+          stream: true,  // 始终使用流式响应
+          // 添加对话历史（如果启用了记忆功能）
+          chat_history: this.config.enableMemory ? this.chatHistory.slice(-this.config.maxHistoryLength) : []
         };
         
         console.log('发送请求:', requestData);
@@ -676,6 +857,38 @@
         }
         
         return fullContent;
+      }
+
+      restoreFromLocalStorage() {
+        try {
+          const savedData = localStorage.getItem('coze_chat_history');
+          if (savedData) {
+            const chatData = JSON.parse(savedData);
+            this.conversationId = chatData.conversationId || null;
+            this.chatHistory = chatData.chatHistory || [];
+            this.renderChatHistory();
+            this.addSystemMessage('已恢复上次的对话');
+          }
+        } catch (error) {
+          console.error('恢复对话失败:', error);
+        }
+      }
+      
+      // 自动保存到本地存储
+      autoSaveToLocalStorage() {
+        if (!this.config.enableMemory) return;
+        
+        const chatData = {
+          conversationId: this.conversationId,
+          chatHistory: this.chatHistory,
+          timestamp: new Date().toISOString()
+        };
+        
+        try {
+          localStorage.setItem('coze_chat_history', JSON.stringify(chatData));
+        } catch (error) {
+          console.error('自动保存失败:', error);
+        }
       }
     }
     
