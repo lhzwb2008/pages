@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>隐私政策 — AI财知道</title>
+  <style>
+    body { font-family: system-ui, sans-serif; line-height: 1.65; max-width: 720px; margin: 0 auto; padding: 2rem 1.25rem; color: #1a1a1a; }
+    h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.1rem; margin-top: 1.5rem; }
+    a { color: #c41e3a; }
+    .muted { color: #666; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <p><a href="index.html">← 返回首页</a></p>
+  <h1>隐私政策</h1>
+  <p class="muted">最后更新：2026-06-01</p>
+
+  <p>本政策说明「AI财知道」相关产品（含通过 TikTok for Developers API 发布内容的功能）如何收集、使用与保护信息。</p>
+
+  <h2>1. 我们收集的信息</h2>
+  <ul>
+    <li><strong>TikTok 授权信息</strong>：当您通过 OAuth 连接 TikTok 账号时，我们仅获取 TikTok 开放平台授予的权限范围内数据（如基本账号信息 <code>user.info.basic</code>，以及用于上传/发布视频的 <code>video.upload</code> / <code>video.publish</code> 权限）。我们不会索取超出授权范围的权限。</li>
+    <li><strong>发布内容</strong>：您选择发布的视频文件、标题/描述/标签及您选择的隐私与互动设置，会经 TikTok Content Posting API 传输至 TikTok 服务器处理。</li>
+    <li><strong>本地凭证</strong>：OAuth 访问令牌与刷新令牌仅存储在您本机或您自行部署环境中的加密凭据目录，不上传至第三方营销平台。</li>
+  </ul>
+
+  <h2>2. 信息用途</h2>
+  <ul>
+    <li>代表已授权账号向 TikTok 上传并发布视频；</li>
+    <li>在发布前查询创作者可用隐私级别与互动能力（<code>creator_info/query</code>）；</li>
+    <li>维护授权会话有效性（刷新 token）。</li>
+  </ul>
+
+  <h2>3. 与 TikTok 的关系</h2>
+  <p>本功能使用 <a href="https://developers.tiktok.com/" rel="noopener">TikTok for Developers</a> 官方 API。视频托管、展示与 TikTok 侧数据处理受 <a href="https://www.tiktok.com/legal/terms-of-service" rel="noopener">TikTok 服务条款</a> 与 <a href="https://www.tiktok.com/legal/privacy-policy" rel="noopener">TikTok 隐私政策</a> 约束。我们不会在未经您操作的情况下向 TikTok 发布内容。</p>
+
+  <h2>4. 共享与披露</h2>
+  <p>除向 TikTok 按 API 要求传输发布所需数据外，我们不会出售您的个人数据。法律要求或为保护权利所必需时除外。</p>
+
+  <h2>5. 数据保留与安全</h2>
+  <p>本地 token 可由您随时通过重新授权或删除凭据文件撤销。请妥善保管设备与 <code>credentials/tiktok/</code> 目录。</p>
+
+  <h2>6. 您的权利</h2>
+  <p>您可在 TikTok App 内管理已授权应用、撤销授权、删除已发布内容。如需停止使用 API 发布，请断开本应用授权并删除本地 token。</p>
+
+  <h2>7. 联系我们</h2>
+  <p>有关本政策或 TikTok 集成的疑问，请通过您提交 TikTok 开发者应用审核时填写的联系邮箱与我们联系。</p>
+</body>
+</html>
