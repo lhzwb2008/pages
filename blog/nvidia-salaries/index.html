@@ -280,47 +280,77 @@ h2.lead {
         <span>2026-06-02</span>
       </p>
       <div class="article-body">
-    <p>昨天 <strong>Business Insider</strong> 发布文章，梳理英伟达相关岗位薪酬。虽然英伟达不会公开全部薪酬，但美国企业为外籍员工申请 H-1B 时需提交基础薪资，这为外界提供了观察窗口。</p>
-    <p>需注意：这些文件只反映<strong>基础工资</strong>，不含股票与奖金，总薪酬往往更高。</p>
+    <p>昨天，<strong>Business Insider</strong> 发了一篇很容易被标题党带偏、但细读极有味道的报道：英伟达相关岗位的薪酬，到底有多夸张？</p>
+    <p>我的判断是：<strong>真正值得读的，不是「47 万美元」这个数字本身，而是数字背后那条人才供应链——谁在加码、谁在收缩，以及一家「卖芯片」的公司，为什么越来越像一家「AI 基础设施组织」。</strong></p>
+    <p>先说清楚数据边界。英伟达不会完整公开薪酬，但美国公司为外籍员工申请 H-1B 时，必须披露基础薪资区间。BI 据此梳理岗位；美国劳工部 OFLC 还公开了海量申请记录（感兴趣可下载全量 Excel，约 21 万条岗位信息）。<strong>这些数字只代表 base，不含 RSU 和奖金</strong>——在英伟达，后者往往才是总包的大头。</p>
 
     <img src="cover.png" alt="封面" />
 
-    <h2>英伟达AI人才有多贵？</h2>
-    <p>从 BI 整理的数据看，基础薪资已经非常高：</p>
-    <ul>
-      <li>软件工程师：<strong>10.8万～39.1万</strong> 美元/年</li>
-      <li>研究科学家：最高 <strong>35.65万</strong> 美元</li>
-      <li>杰出 AI 算法工程师（Distinguished AI Algorithms Engineer）：<strong>30.8万～47.15万</strong> 美元</li>
-      <li>架构总监（Architecture Director）：最高 <strong>48.875万</strong> 美元</li>
-    </ul>
-    <p>过去几年英伟达股价大涨，股权激励成为总包的重要部分。上述数字更像是「可见下限」，而非收入上限。</p>
-
-    <h2>更值得关注的：H-1B 逆势加码</h2>
-    <p>在部分科技公司收缩 H-1B 赞助的背景下，英伟达并未明显放慢海外人才招聘：</p>
+    <h2>一、底薪已经离谱：这不是「硅谷行情」，是「赢家定价」</h2>
+    <p>从 BI 整理的 H-1B 数据看，英伟达的基础薪资区间，已经脱离「普通大厂」语境：</p>
     <table>
-      <tr><th>公司</th><th>H-1B 岗位认证（约）</th><th>趋势</th></tr>
-      <tr><td>英伟达</td><td>2026财年前两季度约 1200</td><td>高于去年同期约 1000</td></tr>
+      <tr><th>岗位（英文）</th><th>基础年薪区间（美元）</th><th>怎么理解</th></tr>
+      <tr><td>Software Engineer</td><td>10.8 万～39.1 万</td><td>区间极宽，反映级别跨度大</td></tr>
+      <tr><td>Research Scientist / Senior / Principal</td><td>最高约 35.65 万～43.125 万</td><td>研究岗与工程岗同档竞争</td></tr>
+      <tr><td>Distinguished AI Algorithms Engineer</td><td>30.8 万～47.15 万</td><td>顶尖算法岗，报道中最吸睛头衔之一</td></tr>
+      <tr><td>Principal Systems Software Engineer</td><td>最高 43.125 万</td><td>系统软件是护城河，薪资匹配战略权重</td></tr>
+      <tr><td>Architecture Director</td><td>最高 48.875 万</td><td>管理/架构岗天花板</td></tr>
+      <tr><td>Software Engineering Director / DevRel Director</td><td>最高 47.15 万</td><td>研发管理与生态同样「贵」</td></tr>
+      <tr><td>Product Manager</td><td>最高 37.95 万</td><td>产品岗并不「便宜」</td></tr>
+    </table>
+    <p>过去几年，英伟达股价暴涨，股权激励使总包进一步膨胀。<strong>所以：H-1B 上的数字，更像是「最低可见部分」，而不是收入上限。</strong> 对候选人来说，这是信号；对竞争者来说，这是威慑。</p>
+    <p>更深一层：英伟达不是在「买人写代码」，而是在为 <strong>GPU → 系统软件 → CUDA 生态 → 客户部署</strong> 这条链，高价锁定关键节点的人才。每一个高薪岗位，都对应着链条上的一环。</p>
+
+    <h2>二、比薪水更值得警惕的：H-1B 的「逆势加仓」</h2>
+    <p>如果只看薪资，你会以为全球科技人才市场一片火热。但把镜头拉远，会看到分裂的图景：特朗普政府收紧移民政策背景下，<strong>不少美国科技公司正在收缩 H-1B 赞助</strong>。英伟达却走了另一条路。</p>
+    <p>报道中的对比非常刺眼（均为 H-1B 岗位认证数量，约数）：</p>
+    <table>
+      <tr><th>公司</th><th>近期规模</th><th>同比趋势</th></tr>
+      <tr><td><strong>英伟达</strong></td><td>2026 财年前两季度约 1200</td><td>高于去年同期约 1000</td></tr>
       <tr><td>Google</td><td>Q2 约 2200</td><td>低于去年同期约 5100</td></tr>
       <tr><td>Amazon</td><td>约 4300</td><td>低于去年同期约 6100</td></tr>
     </table>
-    <p>与 OpenAI、Anthropic 等纯模型公司相比，英伟达在全球技术人才吸纳上的<strong>组织规模与岗位宽度</strong>更大。</p>
+    <p>翻译成人话：<strong>当很多大厂在「少办签证」时，英伟达在「多要人」。</strong> 而且若把英伟达与 OpenAI、Anthropic 等纯模型公司放在一起看，差异更直观——后者的组织更「尖」、更聚焦研究；英伟达吸纳的是<strong>更宽岗位谱系</strong>的全球技术人才：硬件、系统、算法、架构、产品、开发者关系、客户侧部署。</p>
+    <p>这不是 HR 新闻，这是<strong>战略姿态</strong>：英伟达赌的是 AI 基础设施长期紧缺，赌的是「能把芯片优势变成系统优势、再变成客户价值」的人，仍然稀缺。</p>
 
-    <h2>英伟达招的不只是工程师</h2>
-    <p>披露文件显示，英伟达在加强<strong>客户侧、部署侧</strong>岗位——越来越像「AI 基础设施组织」：研发 + 生态 + 客户部署 + 系统集成的高密度人才网络。</p>
+    <h2>三、英伟达招的不只是工程师：一家「基础设施组织」的拼图</h2>
+    <p>披露文件里有个细节，容易被标题淹没：<strong>英伟达不仅在招硬件和软件，还在加强客户侧、部署侧岗位。</strong></p>
+    <p>很多人仍把英伟达理解成「卖 GPU 的公司」。但 AI 时代的英伟达，越来越像麦肯锡所说的那种<strong>高密度人才网络</strong>——</p>
+    <ul>
+      <li>芯片工程师守住硬件底座；</li>
+      <li>系统软件工程师做底层优化（这是竞争对手最难短期复制的层）；</li>
+      <li>AI 研究科学家补强模型与算法叙事；</li>
+      <li>架构师设计系统方案；</li>
+      <li>产品经理把需求与商业化对齐；</li>
+      <li>Developer Relations 经营开发者生态；</li>
+      <li>解决方案架构师把技术带进客户现场，帮云厂商、企业、主权 AI 项目把复杂系统跑起来。</li>
+    </ul>
+    <p>换句话说：<strong>组织形态已从「研发部门很强」演进为「研发 + 生态 + 客户部署 + 系统集成」。</strong> 高薪不是炫耀，是在为这张网付费。</p>
 
-    <h2>几点思考</h2>
-    <ol>
-      <li><strong>AI 转型不能只靠内部培训。</strong> 关键岗位仍需引入 AI 架构、Agent 治理、行业解决方案人才。</li>
-      <li><strong>AI 人才不能只放在技术部门。</strong> 产品、DevRel、解决方案架构师同样关键。</li>
-      <li><strong>重新定义「贵人才」。</strong> 稀缺人才是组织杠杆，而非单纯成本。</li>
-      <li><strong>AI 组织转型不是单纯降本。</strong> 优秀公司会在关键人才上更积极投入。</li>
-    </ol>
+    <h2>四、对中国管理者的三条「非共识」</h2>
+    <p>不同企业很难复制英伟达的股价与股权环境，但<strong>人才配置逻辑</strong>可以借鉴。下面三条，是我认为最值得写进管理层议事日程的。</p>
+    <h3>1. AI 转型不能只靠「全员培训」</h3>
+    <p>内部学习 AI 当然重要，但在关键节点——AI 架构、数据工程、Agent 治理、行业解决方案、业务流程重构——<strong>仍需要高水平外部人才注入</strong>。英伟达用 H-1B 和天价 base 做的，本质上是「在关键枢纽买确定性」。</p>
+    <h3>2. AI 人才不能只锁在技术部</h3>
+    <p>英伟达高薪名单里，产品经理、DevRel、架构总监与工程师并列。说明 AI 落地是<strong>跨职能组织战</strong>，不是给技术部多批一笔预算、挂一块「AI 实验室」牌子就能结束。</p>
+    <h3>3. 要重新定义「贵人才」：从成本项到组织杠杆</h3>
+    <p>过去许多公司把高薪视为成本。AI 时代，真正稀缺的人才是<strong>组织杠杆</strong>——他们不仅完成任务，还能拉高整个团队、产品线、客户系统的产出斜率。英伟达与 Meta（裁员 + 强转 AI 岗）形成鲜明对照：一个用钱买密度，一个用重组换 Agent 产能。<strong>没有哪种绝对正确，但都在回答同一个问题——领先，究竟靠什么维持？</strong></p>
+
+    <h2>写在最后：人才密度，比人数更重要</h2>
+    <p>很多企业谈 AI 组织，容易掉进两个坑：要么「AI = 裁员」，要么「AI = 盲目扩招」。英伟达这个样本给出的是第三条路：<strong>关键不是人头，而是人才密度与岗位谱系是否匹配战略链条。</strong></p>
+    <p>当 BI 用 47 万美元刷屏时，更值得转发给董事会的是另一句话：<strong>在收缩的时代里，赢家仍在为「能把 AI 能力规模化部署出去的人」加价。</strong></p>
+
+    <h2>几点思考（给正在做 AI 转型的你）</h2>
+    <p><strong>第一，</strong>不必照搬薪资数字，但要读懂「高价锁定关键枢纽」的逻辑。<br>
+    <strong>第二，</strong>把招聘视角从「补研发人力」扩到「生态 + 部署 + 集成」。<br>
+    <strong>第三，</strong>用 H-1B/薪酬/组织架构的<strong>组合信号</strong>看竞品，而不是单篇报道。<br>
+    <strong>第四，</strong>AI 组织转型若只绑定降本，会与行业领先者的动作背离——这才是真正的战略风险。</p>
 
     <div class="sources">
       <p><strong>信息地址</strong></p>
       <p><a href="https://www.businessinsider.com/nvidia-salaries-revealed-how-much-engineers-researchers-make-in-2026-2026-6">Business Insider 原文</a></p>
-      <p><a href="https://www.dol.gov/agencies/eta/foreign-labor/performance">DOL H-1B Performance Data</a></p>
-      <p><a href="https://lhzwb2008.github.io/pages/blog/">更多图文 · Iratang 智见</a></p>
+      <p><a href="https://www.dol.gov/agencies/eta/foreign-labor/performance">U.S. DOL · H-1B Performance Data</a></p>
+      <p><a href="https://lhzwb2008.github.io/pages/blog/meta-ai-reorg/">对照阅读：Meta 5 月大重组</a></p>
     </div>
 
       </div>
